@@ -7,7 +7,11 @@ def _clip(series: pd.Series, low: float = 0, high: float = 100) -> pd.Series:
     return series.clip(lower=low, upper=high)
 
 
-def add_scores(df: pd.DataFrame, source_weights: pd.DataFrame) -> pd.DataFrame:
+def add_scores(
+    df: pd.DataFrame,
+    source_weights: pd.DataFrame,
+) -> pd.DataFrame:
+
     result = df.copy()
 
     weights = dict(
@@ -86,16 +90,20 @@ def add_scores(df: pd.DataFrame, source_weights: pd.DataFrame) -> pd.DataFrame:
         .fillna(0)
     )
 
+    # =========================
+    # CAMPOS MERCADO LIVRE
+    # =========================
+
     for col in [
-    "ml_ads",
-    "ml_avg_price",
-    "ml_min_price",
-    "ml_max_price",
-    "ml_competition",
-    "ml_price_opportunity",
-]:
-    if col not in result.columns:
-        result[col] = 0
+        "ml_ads",
+        "ml_avg_price",
+        "ml_min_price",
+        "ml_max_price",
+        "ml_competition",
+        "ml_price_opportunity",
+    ]:
+        if col not in result.columns:
+            result[col] = 0
 
     ml_ads = (
         result["ml_ads"]
@@ -172,7 +180,9 @@ def add_scores(df: pd.DataFrame, source_weights: pd.DataFrame) -> pd.DataFrame:
         100,
     ).round(1)
 
-    result["decision"] = result["opportunity_score"].apply(
+    result["decision"] = result[
+        "opportunity_score"
+    ].apply(
         _decision
     )
 
@@ -182,7 +192,9 @@ def add_scores(df: pd.DataFrame, source_weights: pd.DataFrame) -> pd.DataFrame:
         _launch_recommendation
     )
 
-    result["ml_signal"] = ml_market_score.apply(
+    result["ml_signal"] = result[
+        "ml_market_score"
+    ].apply(
         _ml_signal
     )
 
