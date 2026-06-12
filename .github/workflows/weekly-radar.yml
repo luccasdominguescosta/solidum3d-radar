@@ -28,10 +28,8 @@ jobs:
       - name: Executar Radar
         run: python -m src.solidum_radar.run_pipeline
 
-      - name: Commitar CSV atualizado
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add outputs/radar_multifontes_output.csv solidum_radar.db
-          git commit -m "Atualiza radar multifontes" || echo "Sem mudanças para commitar"
-          git push
+      - name: Salvar artefato
+  uses: actions/upload-artifact@v4
+  with:
+    name: radar-output
+    path: outputs/radar_multifontes_output.csv
