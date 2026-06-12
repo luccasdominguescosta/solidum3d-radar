@@ -13,7 +13,7 @@ def add_scores(df: pd.DataFrame, source_weights: pd.DataFrame) -> pd.DataFrame:
     weights = dict(
         zip(
             source_weights["source"],
-            source_weights["weight"],
+            source_weights["weight"]
         )
     )
 
@@ -86,26 +86,6 @@ def add_scores(df: pd.DataFrame, source_weights: pd.DataFrame) -> pd.DataFrame:
         .fillna(0)
     )
 
-    ml_ads = (
-        result["ml_ads"]
-        .fillna(0)
-    )
-
-    ml_avg_price = (
-        result["ml_avg_price"]
-        .fillna(0)
-    )
-
-    ml_competition = (
-        result["ml_competition"]
-        .fillna(0)
-    )
-
-    ml_price_opportunity = (
-        result["ml_price_opportunity"]
-        .fillna(0)
-    )
-
     trend_score = _clip(
         (
             demand_score * 0.55
@@ -120,40 +100,21 @@ def add_scores(df: pd.DataFrame, source_weights: pd.DataFrame) -> pd.DataFrame:
         100,
     )
 
-    ml_market_score = _clip(
-        (
-            ml_ads * 1.2
-        )
-        + (
-            ml_avg_price / 2
-        )
-        + (
-            ml_price_opportunity * 0.8
-        )
-        - (
-            ml_competition * 0.4
-        ),
-        0,
-        100,
-    )
-
     base_score = (
-        demand_score * 0.16
-        + price_score * 0.08
-        + margin_score * 0.20
-        + competition_score * 0.10
-        + brand_score * 0.14
-        + print_score * 0.11
+        demand_score * 0.18
+        + price_score * 0.10
+        + margin_score * 0.22
+        + competition_score * 0.13
+        + brand_score * 0.15
+        + print_score * 0.12
         + trend_score * 0.05
-        + google_trend_score * 0.08
-        + ml_market_score * 0.14
+        + google_trend_score * 0.10
         - risk_penalty * 0.12
     )
 
     result["demand_score"] = demand_score.round(1)
     result["trend_score"] = trend_score.round(1)
     result["google_trend_score"] = google_trend_score.round(1)
-    result["ml_market_score"] = ml_market_score.round(1)
 
     result["opportunity_score"] = _clip(
         base_score * result["source_weight"],
@@ -169,10 +130,6 @@ def add_scores(df: pd.DataFrame, source_weights: pd.DataFrame) -> pd.DataFrame:
         "opportunity_score"
     ].apply(
         _launch_recommendation
-    )
-
-    result["ml_signal"] = ml_market_score.apply(
-        _ml_signal
     )
 
     return result.sort_values(
@@ -202,16 +159,3 @@ def _launch_recommendation(score: float) -> str:
         return "Observar"
 
     return "Descartar"
-
-
-def _ml_signal(score: float) -> str:
-    if score >= 80:
-        return "Mercado forte"
-
-    if score >= 60:
-        return "Mercado promissor"
-
-    if score >= 40:
-        return "Mercado moderado"
-
-    return "Mercado fraco"
