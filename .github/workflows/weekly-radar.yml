@@ -6,9 +6,6 @@ on:
   schedule:
     - cron: '0 12 * * 1'
 
-permissions:
-  contents: write
-
 jobs:
   radar:
     runs-on: ubuntu-latest
@@ -27,9 +24,9 @@ jobs:
 
       - name: Executar Radar
         run: python -m src.solidum_radar.run_pipeline
-        
-- name: Salvar artefato
-  uses: actions/upload-artifact@v4
-  with:
-    name: radar-output
-    path: outputs/radar_multifontes_output.csv
+
+      - name: Salvar artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-output
+          path: outputs/radar_multifontes_output.csv
