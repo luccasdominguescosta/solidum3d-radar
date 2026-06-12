@@ -10,7 +10,7 @@ st.title("Solidum3D Radar V5 — Radar Multifontes")
 st.caption("Radar de oportunidades para produtos 3D originais, premium e escaláveis.")
 
 if not OUTPUT.exists():
-    st.warning("Execute primeiro: python -m solidum_radar.run_pipeline")
+    st.warning("Execute primeiro: python -m src.solidum_radar.run_pipeline")
     st.stop()
 
 df = pd.read_csv(OUTPUT)
