@@ -14,6 +14,28 @@ def add_scores(
 
     result = df.copy()
 
+    required_defaults = {
+        "sales_30d": 0,
+        "reviews": 0,
+        "competitors": 0,
+        "price": 0,
+        "estimated_cost": 0,
+        "brand_fit": 5,
+        "printability": 5,
+        "ip_risk": 5,
+        "google_trend_score": 0,
+        "ml_ads": 0,
+        "ml_avg_price": 0,
+        "ml_min_price": 0,
+        "ml_max_price": 0,
+        "ml_competition": 0,
+        "ml_price_opportunity": 0,
+    }
+
+    for col, default in required_defaults.items():
+        if col not in result.columns:
+            result[col] = default
+
     weights = dict(
         zip(
             source_weights["source"],
@@ -28,13 +50,13 @@ def add_scores(
     )
 
     result["gross_margin"] = (
-        result["price"]
-        - result["estimated_cost"]
+        result["price"].fillna(0)
+        - result["estimated_cost"].fillna(0)
     )
 
     result["margin_pct"] = (
         result["gross_margin"]
-        / result["price"]
+        / result["price"].replace(0, 1)
     )
 
     demand_score = _clip(
@@ -49,13 +71,13 @@ def add_scores(
     )
 
     price_score = _clip(
-        result["price"] / 1.2,
+        result["price"].fillna(0) / 1.2,
         0,
         100,
     )
 
     margin_score = _clip(
-        result["margin_pct"] * 120,
+        result["margin_pct"].fillna(0) * 120,
         0,
         100,
     )
@@ -89,21 +111,6 @@ def add_scores(
         result["google_trend_score"]
         .fillna(0)
     )
-
-    # =========================
-    # CAMPOS MERCADO LIVRE
-    # =========================
-
-    for col in [
-        "ml_ads",
-        "ml_avg_price",
-        "ml_min_price",
-        "ml_max_price",
-        "ml_competition",
-        "ml_price_opportunity",
-    ]:
-        if col not in result.columns:
-            result[col] = 0
 
     ml_ads = (
         result["ml_ads"]
