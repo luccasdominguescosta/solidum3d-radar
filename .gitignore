@@ -1,0 +1,12 @@
+# Banco local
+solidum_radar.db
+
+# Saídas geradas
+outputs/*.csv
+
+# Python
+__pycache__/
+*.pyc
+
+# Streamlit
+.streamlit/
