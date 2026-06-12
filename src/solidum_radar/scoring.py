@@ -86,6 +86,17 @@ def add_scores(df: pd.DataFrame, source_weights: pd.DataFrame) -> pd.DataFrame:
         .fillna(0)
     )
 
+    for col in [
+    "ml_ads",
+    "ml_avg_price",
+    "ml_min_price",
+    "ml_max_price",
+    "ml_competition",
+    "ml_price_opportunity",
+]:
+    if col not in result.columns:
+        result[col] = 0
+
     ml_ads = (
         result["ml_ads"]
         .fillna(0)
