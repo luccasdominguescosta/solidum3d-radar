@@ -7,34 +7,29 @@ def _clip(series: pd.Series, low: float = 0, high: float = 100) -> pd.Series:
     return series.clip(lower=low, upper=high)
 
 
+def _num(df: pd.DataFrame, col: str, default: float = 0) -> pd.Series:
+    if col in df.columns:
+        return pd.to_numeric(df[col], errors="coerce").fillna(default)
+
+    return pd.Series(default, index=df.index)
+
+
 def add_scores(
     df: pd.DataFrame,
     source_weights: pd.DataFrame,
 ) -> pd.DataFrame:
 
     result = df.copy()
+    result.columns = result.columns.str.strip()
 
-    required_defaults = {
-        "sales_30d": 0,
-        "reviews": 0,
-        "competitors": 0,
-        "price": 0,
-        "estimated_cost": 0,
-        "brand_fit": 5,
-        "printability": 5,
-        "ip_risk": 5,
-        "google_trend_score": 0,
-        "ml_ads": 0,
-        "ml_avg_price": 0,
-        "ml_min_price": 0,
-        "ml_max_price": 0,
-        "ml_competition": 0,
-        "ml_price_opportunity": 0,
-    }
+    if "source" not in result.columns:
+        result["source"] = "unknown"
 
-    for col, default in required_defaults.items():
-        if col not in result.columns:
-            result[col] = default
+    if "title" not in result.columns:
+        result["title"] = ""
+
+    if "keyword" not in result.columns:
+        result["keyword"] = ""
 
     weights = dict(
         zip(
@@ -49,29 +44,34 @@ def add_scores(
         .fillna(1.0)
     )
 
-    result["gross_margin"] = (
-        result["price"].fillna(0)
-        - result["estimated_cost"].fillna(0)
-    )
+    price = _num(result, "price", 0)
+    estimated_cost = _num(result, "estimated_cost", 0)
+    sales_30d = _num(result, "sales_30d", 0)
+    reviews = _num(result, "reviews", 0)
+    competitors = _num(result, "competitors", 0)
+    brand_fit = _num(result, "brand_fit", 5)
+    printability = _num(result, "printability", 5)
+    ip_risk = _num(result, "ip_risk", 5)
 
-    result["margin_pct"] = (
-        result["gross_margin"]
-        / result["price"].replace(0, 1)
-    )
+    google_trend_score = _num(result, "google_trend_score", 0)
+
+    ml_ads = _num(result, "ml_ads", 0)
+    ml_avg_price = _num(result, "ml_avg_price", 0)
+    ml_competition = _num(result, "ml_competition", 0)
+    ml_price_opportunity = _num(result, "ml_price_opportunity", 0)
+
+    result["gross_margin"] = price - estimated_cost
+    result["margin_pct"] = result["gross_margin"] / price.replace(0, 1)
 
     demand_score = _clip(
-        (
-            result["sales_30d"].fillna(0) / 5
-        )
-        + (
-            result["reviews"].fillna(0) / 10
-        ),
+        (sales_30d / 5)
+        + (reviews / 10),
         0,
         100,
     )
 
     price_score = _clip(
-        result["price"].fillna(0) / 1.2,
+        price / 1.2,
         0,
         100,
     )
@@ -83,82 +83,28 @@ def add_scores(
     )
 
     competition_score = _clip(
-        100
-        - result["competitors"].fillna(0) * 1.4,
+        100 - competitors * 1.4,
         0,
         100,
     )
 
-    brand_score = (
-        result["brand_fit"]
-        .fillna(5)
-        * 10
-    )
-
-    print_score = (
-        result["printability"]
-        .fillna(5)
-        * 10
-    )
-
-    risk_penalty = (
-        result["ip_risk"]
-        .fillna(5)
-        * 7
-    )
-
-    google_trend_score = (
-        result["google_trend_score"]
-        .fillna(0)
-    )
-
-    ml_ads = (
-        result["ml_ads"]
-        .fillna(0)
-    )
-
-    ml_avg_price = (
-        result["ml_avg_price"]
-        .fillna(0)
-    )
-
-    ml_competition = (
-        result["ml_competition"]
-        .fillna(0)
-    )
-
-    ml_price_opportunity = (
-        result["ml_price_opportunity"]
-        .fillna(0)
-    )
+    brand_score = brand_fit * 10
+    print_score = printability * 10
+    risk_penalty = ip_risk * 7
 
     trend_score = _clip(
-        (
-            demand_score * 0.55
-        )
-        + (
-            competition_score * 0.25
-        )
-        + (
-            result["reviews"].fillna(0) / 3
-        ),
+        (demand_score * 0.55)
+        + (competition_score * 0.25)
+        + (reviews / 3),
         0,
         100,
     )
 
     ml_market_score = _clip(
-        (
-            ml_ads * 1.2
-        )
-        + (
-            ml_avg_price / 2
-        )
-        + (
-            ml_price_opportunity * 0.8
-        )
-        - (
-            ml_competition * 0.4
-        ),
+        (ml_ads * 1.2)
+        + (ml_avg_price / 2)
+        + (ml_price_opportunity * 0.8)
+        - (ml_competition * 0.4),
         0,
         100,
     )
@@ -187,23 +133,11 @@ def add_scores(
         100,
     ).round(1)
 
-    result["decision"] = result[
-        "opportunity_score"
-    ].apply(
-        _decision
-    )
-
-    result["launch_recommendation"] = result[
-        "opportunity_score"
-    ].apply(
+    result["decision"] = result["opportunity_score"].apply(_decision)
+    result["launch_recommendation"] = result["opportunity_score"].apply(
         _launch_recommendation
     )
-
-    result["ml_signal"] = result[
-        "ml_market_score"
-    ].apply(
-        _ml_signal
-    )
+    result["ml_signal"] = result["ml_market_score"].apply(_ml_signal)
 
     return result.sort_values(
         "opportunity_score",
