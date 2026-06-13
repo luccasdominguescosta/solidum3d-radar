@@ -4,8 +4,6 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 
-from src.solidum_radar.run_pipeline import main as run_pipeline
-
 BASE_DIR = Path(__file__).parent
 OUTPUT = BASE_DIR / "outputs" / "radar_multifontes_output.csv"
 
@@ -19,35 +17,39 @@ st.caption(
     "Radar multifontes com Google Trends e Mercado Livre Intelligence para identificar oportunidades reais de produtos 3D."
 )
 
+if not OUTPUT.exists():
+    st.warning(
+        "Arquivo de dados não encontrado. Rode o workflow no GitHub Actions para gerar o CSV."
+    )
+    st.stop()
 
-def load_data() -> pd.DataFrame:
-    required_columns = [
-        "launch_recommendation",
-        "google_trend_score",
-        "google_trend_direction",
-        "ml_ads",
-        "ml_avg_price",
-        "ml_market_score",
-        "ml_signal",
-    ]
+df = pd.read_csv(OUTPUT)
 
-    needs_refresh = True
+required_columns = [
+    "launch_recommendation",
+    "google_trend_score",
+    "google_trend_direction",
+    "ml_ads",
+    "ml_avg_price",
+    "ml_min_price",
+    "ml_max_price",
+    "ml_competition",
+    "ml_price_opportunity",
+    "ml_market_score",
+    "ml_signal",
+]
 
-    if OUTPUT.exists():
-        existing_df = pd.read_csv(OUTPUT)
-        needs_refresh = any(
-            col not in existing_df.columns
-            for col in required_columns
-        )
+missing_columns = [
+    col for col in required_columns
+    if col not in df.columns
+]
 
-    if needs_refresh:
-        with st.spinner("Atualizando Radar Solidum3D V7..."):
-            run_pipeline()
-
-    return pd.read_csv(OUTPUT)
-
-
-df = load_data()
+if missing_columns:
+    st.error(
+        "O CSV ainda não está atualizado para a V7. Rode novamente o workflow no GitHub Actions."
+    )
+    st.write("Colunas faltando:", missing_columns)
+    st.stop()
 
 col1, col2, col3, col4, col5 = st.columns(5)
 
